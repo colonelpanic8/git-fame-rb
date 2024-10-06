@@ -19,6 +19,7 @@ module GitFame
       files = Hash.new { |h, k| h[k] = Set.new }
       lines = Hash.new(0)
       names = {}
+      lines_by_file = Hash.new { |h, k| h[k] = Hash.new(0) }
 
       diff.each do |change|
         filter.call(change) do |loc, file, oid, name, email|
@@ -26,6 +27,7 @@ module GitFame
           files[email].add(file)
           names[email] = name
           lines[email] += loc
+          lines_by_file[email][file] += loc
         end
       end
 
@@ -34,6 +36,7 @@ module GitFame
           lines: lines[email],
           commits: commits[email],
           files: files[email],
+          lines_by_file: lines_by_file[email],
           author: {
             name: names[email],
             email: email
