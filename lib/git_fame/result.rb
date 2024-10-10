@@ -27,30 +27,29 @@ module GitFame
     end
 
     # @return [Hash<String, Hash<String, Object>>]
-    # Returns a hash where each key is an author's email, and each value is a nested hash representing the directory tree
-    # structure, with line counts stored in a "count" key and subdirectories/files stored in "children".
+    # Returns a hash where each level of the directory tree has counts associated with author emails.
+    # Each level will have a hash of author emails, each containing "count" and "children" for the directory structure.
     def lines_by_file
-      contributions.each_with_object(Hash.new { |h, k| h[k] = {} }) do |contribution, result|
+      contributions.each_with_object({}) do |contribution, result|
         author_email = contribution.author[:email]
 
         contribution.lines_by_file.each do |file, loc|
           path_parts = file.split(File::SEPARATOR)
 
-          # Start at the root of the author's tree
-          current_level = result[author_email]
+          # Start at the root of the tree
+          current_level = result
 
           # Traverse each directory/file level
           path_parts.each_with_index do |part, index|
-            if index == path_parts.size - 1
-              # This is the file, store its own count
-              current_level[part] ||= { "count" => 0, "children" => {} }
-              current_level[part]["count"] += loc
-            else
-              # For directories, ensure we have a "children" key and move deeper into the hierarchy
-              current_level[part] ||= { "count" => 0, "children" => {} }
-              current_level[part]["count"] += loc  # Increment the directory count
-              current_level = current_level[part]["children"]
-            end
+            # Ensure there's a hash for this directory/file level keyed by author email
+            current_level[part] ||= {}
+            current_level[part][author_email] ||= { "count" => 0, "children" => {} }
+
+            # Update the count for this author at this level
+            current_level[part][author_email]["count"] += loc
+
+            # Move deeper into the hierarchy for the children
+            current_level = current_level[part][author_email]["children"] unless index == path_parts.size - 1
           end
         end
       end
