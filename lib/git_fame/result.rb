@@ -26,19 +26,31 @@ module GitFame
       contributions.sum(&:lines)
     end
 
-    # @return [Hash<String, Hash<String, Integer>>]
-    # Returns a hash where each key is an author's email, and each value is another hash mapping file paths (including subdirectories) to line counts.
+    # @return [Hash<String, Hash<String, Object>>]
+    # Returns a hash where each key is an author's email, and each value is a nested hash representing the directory tree
+    # structure, with line counts stored in a "count" key and subdirectories/files stored in "children".
     def lines_by_file
-      contributions.each_with_object(Hash.new { |h, k| h[k] = Hash.new(0) }) do |contribution, result|
+      contributions.each_with_object(Hash.new { |h, k| h[k] = {} }) do |contribution, result|
         author_email = contribution.author[:email]
+
         contribution.lines_by_file.each do |file, loc|
-          # Split the file path into its directories
           path_parts = file.split(File::SEPARATOR)
 
-          # Iterate over each part to build paths for subdirectories
-          (1..path_parts.size).each do |i|
-            sub_path = path_parts.first(i).join(File::SEPARATOR)
-            result[author_email][sub_path] += loc
+          # Start at the root of the author's tree
+          current_level = result[author_email]
+
+          # Traverse each directory/file level
+          path_parts.each_with_index do |part, index|
+            if index == path_parts.size - 1
+              # This is the file, store its own count
+              current_level[part] ||= { "count" => 0, "children" => {} }
+              current_level[part]["count"] += loc
+            else
+              # For directories, ensure we have a "children" key and move deeper into the hierarchy
+              current_level[part] ||= { "count" => 0, "children" => {} }
+              current_level[part]["count"] += loc  # Increment the directory count
+              current_level = current_level[part]["children"]
+            end
           end
         end
       end
