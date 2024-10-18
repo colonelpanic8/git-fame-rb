@@ -36,6 +36,7 @@ module GitFame
       in [{ orig_path: path }, { extensions: }] unless extensions.any? { File.extname(path) == _1 }
         say("File %s excluded by [extensions] (%p)", path, extensions)
       in [{final_signature: { name:, email:}, final_commit_id: oid, lines_in_hunk: lines, orig_path: path}, Hash]
+        # say("File %s included", path)
         block[lines, path, oid, name, email]
       end
     end
